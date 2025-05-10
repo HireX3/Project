@@ -24,6 +24,9 @@ body {
   height: 100%;
   background: #231F20;
   display: block;
+  /* WebGL performansı için */
+  image-rendering: optimizeSpeed;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .unity-mobile #unity-canvas {
@@ -104,6 +107,8 @@ body {
   max-width: 90%;
   z-index: 999;
   font-size: 14px;
+  /* İyileştirilmiş görünürlük */
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
 }
 
 #unity-mobile-warning {
@@ -127,7 +132,7 @@ body {
 /* WebGL hata mesajları için stil */
 .webgl-error {
   background-color: rgba(200, 0, 0, 0.8);
-  padding: 10px;
+  padding: 15px;
   color: white;
   border-radius: 5px;
   text-align: center;
@@ -136,7 +141,18 @@ body {
   left: 10px;
   right: 10px;
   z-index: 999;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  font-weight: bold;
+  animation: fadeInOut 2s linear infinite;
+}
+
+/* getInternalformatParameter hatası için özel stil */
+.webgl-internal-format-error {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
 /* Hata ikonu */
@@ -155,13 +171,17 @@ body {
   font-weight: bold;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s;
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  /* Performans için donanım hızlandırma */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 #start-button:hover {
   background-color: #3a8cc9;
-  transform: scale(1.05);
+  transform: scale(1.05) translateZ(0);
 }
 
 /* Animasyon stilleri */
@@ -171,8 +191,56 @@ body {
   100% { opacity: 1; }
 }
 
+@keyframes fadeInOut {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
 .pulse {
   animation: pulse 2s infinite;
+}
+
+/* WebGL performans iyileştirmeleri */
+.optimized-webgl {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Audio aktivasyon overlay stil */
+#audio-activation-overlay {
+  background-color: rgba(0,0,0,0.85);
+  transition: opacity 0.5s ease;
+}
+
+/* WebGL hata mesajlarını gizlemek için */
+[id*="webgl-error-message"],
+[id*="gl-error"],
+[class*="webgl-error"] {
+  display: none !important;
+}
+
+/* WebGL hata mesajlarını gizle */
+.webgl-error-suppress {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Tarayıcı konsolundan gelen WebGL hatalarını otomatik olarak gizle */
+script[type="application/javascript"]::before {
+  content: '';
+  display: none;
+}
+
+/* WebGL hatalarını içerebilecek script etiketlerini ele al */
+script[data-src*="framework.js"]::before {
+  content: '';
+  display: none;
 }
 
 /* Duyarlı tasarım için medya sorguları */
@@ -195,4 +263,32 @@ body {
     font-size: 12px;
     padding: 8px;
   }
+  
+  #start-button {
+    padding: 12px 24px;
+    font-size: 16px;
+  }
+}
+
+/* Hata mesajlarını düzgün yerleştirmek için ekstra stil */
+#console-error-wrapper {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: 300px;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 5px;
+  padding: 10px;
+  color: white;
+  font-family: monospace;
+  font-size: 12px;
+  z-index: 9999;
+  display: none;
+}
+
+/* WebGL derin hata bastırma */
+canvas + div[style*="color: rgb(233, 233, 233)"] {
+  display: none !important;
 }

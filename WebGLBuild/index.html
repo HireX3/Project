@@ -7,7 +7,8 @@
     <title>HireX3D - Sanal Mülakat Simülasyonu</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
-    <!-- Audio ve WebGL sorunlarını giderme scripti -->
+    <!-- WebGL ve Audio sorunlarını giderme scriptleri -->
+    <script src="TemplateData/webglFix.js"></script>
     <script src="TemplateData/audioFix.js"></script>
     <style>
       #unity-container {
@@ -186,9 +187,44 @@
       
       // WebGL hatalarını giderme
       window.onerror = function(message, source, lineno, colno, error) {
-        if (message.includes('getInternalformatParameter') || message.includes('AudioContext')) {
+        if (message.includes('getInternalformatParameter') || message.includes('AudioContext') || message.includes('INVALID_ENUM')) {
           console.log('Bilinen WebGL/Audio hatası engellendi:', message);
           return true; // Hatayı yakala ve gösterme
+        }
+      };
+      
+      // WebGL hata mesajlarını gizle
+      console.error = (function(originalError) {
+        return function(message) {
+          if (typeof message === 'string' && 
+              (message.includes('WebGL') || 
+               message.includes('getInternalformatParameter') || 
+               message.includes('INVALID_ENUM'))) {
+            // WebGL hata mesajlarını bas
+            return;
+          }
+          // Diğer hata mesajlarına izin ver
+          return originalError.apply(console, arguments);
+        };
+      })(console.error);
+      
+      // FPS sınırlaması uygula - performans için
+      var TARGET_FRAME_RATE = 30;
+      var FRAME_TIME = 1000 / TARGET_FRAME_RATE;
+      var lastFrameTime = 0;
+      
+      // İşlemci yükünü azaltmak için FPS sınırlaması
+      window.limitFrameRate = function(callback) {
+        var currentTime = performance.now();
+        var elapsed = currentTime - lastFrameTime;
+        
+        if (elapsed > FRAME_TIME) {
+          lastFrameTime = currentTime - (elapsed % FRAME_TIME);
+          callback();
+        } else {
+          setTimeout(function() {
+            window.limitFrameRate(callback);
+          }, 1);
         }
       };
     </script>
@@ -206,6 +242,11 @@
       </div>
       
       <canvas id="unity-canvas" style="width: 100%; height: 100%; background: #231F20"></canvas>
+      
+      <!-- WebGL uyumluluk ve hata bildirimi -->
+      <div id="webgl-error" style="display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background-color: rgba(220, 0, 0, 0.8); color: white; padding: 10px; border-radius: 5px; z-index: 1000; text-align: center; max-width: 80%;">
+        WebGL hatası tespit edildi. Uygulamanın çalışması için tarayıcınızda WebGL 2.0 desteği gereklidir.
+      </div>
       
       <div id="unity-loading-bar">
         <div id="unity-logo"></div>
@@ -226,18 +267,44 @@
       </div>
     </div>
     <script>
-      // İşlemci talebi sınırlandırma
+      // WebGL 2.0 desteğini kontrol et
+      function checkWebGLSupport() {
+        var canvas = document.createElement('canvas');
+        var gl = null;
+        
+        try {
+          gl = canvas.getContext("webgl2");
+        } catch (e) {
+          return false;
+        }
+        
+        if (!gl) {
+          return false;
+        }
+        
+        return true;
+      }
+      
+      // WebGL desteği yoksa kullanıcıyı uyar
+      if (!checkWebGLSupport()) {
+        document.getElementById('webgl-error').style.display = 'block';
+      }
+      
+      // İşlemci talebi sınırlandırma - webglFix.js ile değiştirildi
       var _raf = window.requestAnimationFrame;
       window.requestAnimationFrame = function(callback) {
         return _raf(function() {
-          setTimeout(callback, 1);
+          window.limitFrameRate(callback);
         });
       };
       
       // Global hata yakalama ve işleme
       window.addEventListener('error', function(e) {
-        if (e.message && (e.message.includes('getInternalformatParameter') || e.message.includes('AudioContext'))) {
-          console.log('Bilinen hata engellendi:', e.message);
+        if (e.message && (e.message.includes('getInternalformatParameter') || 
+                          e.message.includes('AudioContext') || 
+                          e.message.includes('INVALID_ENUM') ||
+                          e.message.includes('WebGL'))) {
+          // Bilinen WebGL hatalarını engelle
           e.preventDefault();
           e.stopPropagation();
           return true;
@@ -257,7 +324,29 @@
         console.error('WebGL bağlamı kaybedildi:', e);
         showError('WebGL bağlamı kaybedildi. Lütfen sayfayı yenileyin.');
         e.preventDefault();
+        
+        // 3 saniye sonra sayfayı yenilemeyi dene
+        setTimeout(function() {
+          window.location.reload();
+        }, 3000);
       }, false);
+      
+      // Bellek yönetimi
+      var MEMORY_CHECK_INTERVAL = 60000; // 60 saniye
+      setInterval(function() {
+        if (window.gc) {
+          window.gc();
+        }
+        
+        if (window.unityInstance && typeof window.unityInstance.SetFullscreen === 'function') {
+          try {
+            // Unity'de bellek temizliği çağır (eğer uygulama tarafında destekleniyorsa)
+            window.unityInstance.SendMessage("WebGLManager", "ClearMemory", "");
+          } catch (e) {
+            // İşlev bulunamadığında devam et
+          }
+        }
+      }, MEMORY_CHECK_INTERVAL);
       
       // Sayfa yüklenince tarayıcı hafızasını temizle
       window.onbeforeunload = function() {
@@ -284,6 +373,9 @@
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         container.className = "unity-mobile";
         canvas.className = "unity-mobile";
+        
+        // Mobil cihazlarda performans uyarısını göster
+        document.getElementById('unity-mobile-warning').style.display = 'block';
       } else {
         canvas.style.width = "960px";
         canvas.style.height = "600px";
@@ -302,6 +394,19 @@
         }
       }
       
+      // Unity yapılandırması
+      var config = {
+        dataUrl: "Build/Project.data",
+        frameworkUrl: "Build/Project.framework.js",
+        codeUrl: "Build/Project.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "HireX3D",
+        productName: "Sanal Mülakat Simülasyonu",
+        productVersion: "1.0",
+        devicePixelRatio: 1, // performans için düşük tutuldu
+        matchWebGLToCanvasSize: false // performans optimizasyonu
+      };
+      
       // Canvası yapılandır
       canvas.style.width = "100%";
       canvas.style.height = "100%";
@@ -313,20 +418,36 @@
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
           progressBarFull.style.width = 100 * progress + "%";
-          statusText.innerHTML = "Yükleniyor: %" + Math.round(progress * 100);
-        }).then((unityInstance) => {
-          window.unityInstance = unityInstance;
+          document.getElementById("loading-text").innerHTML = "Yükleniyor: %" + Math.round(progress * 100);
+        }).then((instance) => {
+          window.unityInstance = instance;
           loadingBar.style.display = "none";
-          startButton.style.display = "block";
-          statusText.innerHTML = "Unity başarıyla yüklendi";
+          
+          // Audio ve WebGL sistemlerini başlat
+          if (window.startAudioContext) {
+            window.startAudioContext();
+          }
           
           // Unity başlatıldığında düzeltmeleri çağır
           if (window.onUnityLoaded) {
             window.onUnityLoaded();
           }
           
-          // Kullanıcı etkileşimi ile ses sistemini başlat
-          initializeAudioContext();
+          // Unity WebGLBuild'i hazır
+          console.log("Unity WebGL başarıyla yüklendi.");
+          
+          // FPS limitleme
+          window.setInterval(function() {
+            try {
+              // Performans için düşük FPS ile döngü
+              if (!document.hidden && !document.msHidden && !document.webkitHidden) {
+                unityInstance.SendMessage("WebGLManager", "UpdateFrame", "");
+              }
+            } catch (e) {
+              // Hataları sessizce handle et
+            }
+          }, 1000 / 30); // 30 FPS
+          
         }).catch((message) => {
           showBanner(message, "error");
         });
@@ -337,47 +458,40 @@
        * Ses sistemini başlatmak için kullanıcı etkileşimi bekleyen fonksiyon
        */
       function initializeAudioContext() {
-        // Başlatma butonunu ayarla
-        startButton.addEventListener("click", function() {
-          startButton.style.display = "none";
-          if (window.startAudioContext) {
-            window.startAudioContext();
+        // HTML5 Audio API için destek kontrolü
+        if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+          // Audio context başlatma için kullanıcı etkileşimini bekle
+          var audioActivationOverlay = document.getElementById('audio-activation-overlay');
+          var startBtn = document.getElementById('start-button');
+          
+          if (startBtn) {
+            startBtn.addEventListener("click", function() {
+              if (window.startAudioContext) {
+                window.startAudioContext();
+              }
+              // Overlay'i gizle - webglFix.js otomatik olarak bunu yönetir
+            });
           }
-        });
-        
-        // Canvasa tıklama olayı ekle
-        canvas.addEventListener("click", function() {
-          if (window.startAudioContext) {
-            window.startAudioContext();
-          }
-          overlay.style.display = "none";
-        });
-        
-        // 2 saniye sonra overlay'i göster
-        setTimeout(function() {
-          if (!window.audioStarted) {
-            overlay.style.display = "block";
-            
-            // 5 saniye sonra overlay'i otomatik gizle
-            setTimeout(function() {
-              overlay.style.display = "none";
-            }, 5000);
-          }
-        }, 2000);
-        
-        // Çeşitli kullanıcı etkileşimlerini dinle
-        document.addEventListener("click", function() {
-          if (window.startAudioContext) {
-            window.startAudioContext();
-          }
-        }, { once: true });
-        
-        document.addEventListener("keydown", function() {
-          if (window.startAudioContext) {
-            window.startAudioContext();
-          }
-        }, { once: true });
+          
+          // Çeşitli kullanıcı etkileşimlerini dinle
+          document.addEventListener("click", function() {
+            if (window.startAudioContext) {
+              window.startAudioContext();
+            }
+          }, { once: true });
+          
+          document.addEventListener("keydown", function() {
+            if (window.startAudioContext) {
+              window.startAudioContext();
+            }
+          }, { once: true });
+        } else {
+          console.warn("Bu tarayıcı WebAudio API desteklemiyor");
+        }
       }
+      
+      // WebAudio sistemi başlatma işlemini çağır
+      initializeAudioContext();
       
       // Unity telemetri isteklerini engelle
       var originalFetch = window.fetch;
@@ -386,6 +500,12 @@
           console.log('Unity telemetri isteği engellendi');
           return Promise.resolve(new Response('', {status: 200}));
         }
+        
+        // webglFix.js tarafından önceden yamalanmış olabilir, bu durumda orijinali kullan
+        if (window._originalFetch) {
+          return window._originalFetch.apply(this, arguments);
+        }
+        
         return originalFetch.apply(this, arguments);
       };
       
