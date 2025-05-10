@@ -1,112 +1,50 @@
-# HireX3D
+# Mülakat Simülasyonu Projesi - WebGL Demo
 
-Bu proje, yapay zeka destekli sanal mülakat deneyimi sunan interaktif bir uygulamadır. Unity tabanlı 3D arayüz ve FastAPI tabanlı backend API kullanarak gerçekçi bir mülakat simülasyonu sağlar.
+Bu repo, yapay zeka destekli sanal mülakat simülasyonu projemizin WebGL demosunu içermektedir.
 
-## Özellikler
+## Proje Hakkında
 
-- 3D sanal mülakatçı karakteri (Ready Player Me entegrasyonu)
+Bu proje, adayların mülakat becerilerini geliştirmelerine yardımcı olmak için tasarlanmış interaktif bir simülasyon uygulamasıdır. Unity ile geliştirilen 3D arayüz ve FastAPI backend'i kullanarak gerçekçi bir mülakat deneyimi sunar.
+
+### Özellikler
+
+- 3D sanal mülakatçı karakteri
 - Gerçek zamanlı konuşma ve ses sentezi
-- Dinamik mülakat akışı
-- Mülakatçı karakterin konuşmalarını sesli olarak duyabilme
+- Dinamik mülakat soru akışı
 - Metin tabanlı iletişim
+- Mülakatçı karakterin konuşmalarını sesli olarak duyabilme
 - Mülakat sonunda performans değerlendirmesi
 
-## Proje Yapısı
+## Demo
 
-Proje iki ana bileşenden oluşmaktadır:
-
-### 1. Unity 3D Arayüzü
-
-Unity klasörü içerisinde yer alan 3D kullanıcı arayüzü:
-
-- Ready Player Me entegrasyonu ile 3D karakter oluşturma
-- WebSocket bağlantısı ile gerçek zamanlı iletişim
-- Ses sentezi ve oynatma özellikleri
-- Kullanıcı etkileşimi için UI bileşenleri
-
-### 2. FastAPI Backend
-
-API klasörü içerisinde yer alan Python tabanlı backend:
-
-- FastAPI ile REST API servisi
-- WebSocket desteği ile gerçek zamanlı iletişim
-- Gemini AI entegrasyonu ile mülakat akışı yönetimi
-- Metin-ses dönüşümü (gTTS kullanarak)
-
-## Kurulum
-
-### Gereksinimler
-
-#### Backend (API) için:
-- Python 3.8+
-- FastAPI
-- uvicorn
-- pydantic
-- gTTS (Google Text-to-Speech)
-- Diğer gereksinimler `requirements.txt` içinde belirtilmiştir
-
-#### Frontend (Unity) için:
-- Unity 2022.3 LTS veya daha yeni
-- Ready Player Me SDK
-- Newtonsoft JSON paketi
-
-### Backend Kurulumu
-
-1. API klasörüne gidin:
-```bash
-cd API
-```
-
-2. Sanal ortam oluşturun (opsiyonel):
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate     # Windows
-```
-
-3. Gereksinimleri yükleyin:
-```bash
-pip install -r requirements.txt
-```
-
-4. `.env` dosyası oluşturun ve Gemini API anahtarınızı ekleyin:
-```
-GEMINI_API_KEY=sizin_gemini_api_anahtariniz
-```
-
-5. API'yi başlatın:
-```bash
-uvicorn interview_api:app --host 0.0.0.0 --port 8001 --reload
-```
-
-### Frontend Kurulumu
-
-1. Unity Hub üzerinden Unity 2022.3 LTS veya daha yeni bir sürüm kurun
-2. Unity Hub'dan projeyi açın (Unity klasörü)
-3. Assets > Scenes > Main.scene sahnesini açın
-4. Proje ayarlarında API URL'sini yapılandırın (varsayılan: http://127.0.0.1:8001/)
-5. Projeyi derleyin ve çalıştırın
+Bu WebGL demosu, tarayıcınızda projenin ön yüzünü deneyimlemenize olanak tanır. 
+Demo'yu denemek için [buraya tıklayın](https://hirex3.github.io/Project/).
 
 ## Kullanım
 
-1. API servisini başlatın
-2. Unity uygulamasını çalıştırın
-3. "Mülakata Başla" butonuna tıklayın
-4. Soruları yanıtlayın ve mülakat deneyimini yaşayın
+1. Demo sayfasını açın
+2. Sanal mülakatçı karakterimiz ile etkileşime geçin
+3. Mikrofonunuzu kullanarak ya da metin girerek soruları yanıtlayın
 
-## WebGL Build
+## Teknik Detaylar
 
-Projeyi web üzerinden çalıştırmak için WebGL build kullanabilirsiniz:
+WebGL demo, aşağıdaki bileşenleri kullanmaktadır:
 
-1. Unity Editor'da File > Build Settings'e gidin
-2. Platform olarak WebGL seçin
-3. Build butonuna tıklayın
-4. Oluşan build klasörünü bir web sunucusunda host edin
+- Unity 2022.3 LTS
+- WebGL 2.0
+- Ready Player Me 3D avatar sistemi
+- HTML5 ve JavaScript
 
-## Lisans
+## Backend API
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+API klasörü, FastAPI ile geliştirilmiş backend servisini içermektedir. Tam bir deneyim için API sunucusunu aşağıdaki komutla başlatabilirsiniz:
 
-## İletişim
+```bash
+cd API
+pip install -r requirements.txt
+uvicorn interview_api:app --reload
+```
 
-Sorularınız veya önerileriniz için GitHub üzerinden iletişime geçebilirsiniz. 
+---
+
+© 2023 HireX3D Team | Tüm hakları saklıdır. 
