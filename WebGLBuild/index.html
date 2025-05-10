@@ -115,6 +115,60 @@
         max-width: 80%;
         line-height: 1.5;
       }
+      .unity-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        text-align: center;
+        z-index: 10;
+        display: none;
+      }
+      .unity-overlay-message {
+        color: white;
+        font-size: 18px;
+        padding: 20px;
+        background-color: rgba(0,0,0,0.7);
+        border-radius: 10px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      #unity-start-button {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 12px 24px;
+        background-color: #1c60c7;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        z-index: 9;
+        display: none;
+      }
+      #unity-footer {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        padding: 5px;
+        background-color: rgba(0,0,0,0.2);
+        color: white;
+        font-size: 12px;
+      }
+      @media screen and (max-width: 768px) {
+        #unity-start-button {
+          font-size: 14px;
+          padding: 10px 20px;
+        }
+      }
     </style>
     <!-- Analitik servislerini devre dışı bırak -->
     <script>
@@ -140,32 +194,23 @@
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
+      <div id="unity-overlay" class="unity-overlay">
+        <div class="unity-overlay-message">
+          Ses sistemini etkinleştirmek için ekrana tıklayın.
+        </div>
+      </div>
       <canvas id="unity-canvas" width=960 height=600></canvas>
       <div id="unity-loading-bar">
         <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
           <div id="unity-progress-bar-full"></div>
         </div>
-        <div id="loading-text">Yükleniyor... Bu işlem ilk seferde biraz zaman alabilir.</div>
+        <div id="unity-status-text" style="text-align: center; color: white;">Yükleniyor...</div>
       </div>
+      <button id="unity-start-button">Başlat</button>
       <div id="unity-warning"></div>
       <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Hirex3D</div>
-      </div>
-      
-      <!-- Ses ve WebGL başlatma için overlay -->
-      <div id="audio-start-overlay">
-        <p class="overlay-text">
-          Sanal mülakat deneyimine başlamak için aşağıdaki butona tıklayın.<br>
-          Bu işlem ses ve görüntü sistemlerini başlatacaktır.
-        </p>
-        <button id="start-button">BAŞLAT</button>
-        <p class="overlay-text">
-          Not: Uygulamanın çalışması için kullanıcı etkileşimi gereklidir.<br>
-          Tarayıcı kısıtlamaları nedeniyle ses ve WebGL sistemleri ancak bu şekilde başlatılabilir.
-        </p>
+        <div class="footer-text">HireX3D Mülakat Simülasyonu</div>
       </div>
     </div>
     <script>
@@ -216,163 +261,111 @@
       var canvas = document.querySelector("#unity-canvas");
       var loadingBar = document.querySelector("#unity-loading-bar");
       var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var warningBanner = document.querySelector("#unity-warning");
-      var loadingText = document.querySelector("#loading-text");
-      var overlay = document.getElementById('audio-start-overlay');
+      var startButton = document.querySelector("#unity-start-button");
+      var overlay = document.querySelector("#unity-overlay");
+      var statusText = document.querySelector("#unity-status-text");
       var unityStarted = false;
       var unityInstance = null;
       
-      // Kullanıcı butonuna tıklandığında Unity'yi başlat
-      document.getElementById('start-button').addEventListener('click', function() {
-        if (unityStarted) return;
-        
-        // Overlay'i gizle
-        overlay.style.opacity = '0';
-        setTimeout(function() {
-          overlay.style.display = 'none';
-        }, 500);
-        
-        // Unity'yi başlat
-        startUnity();
-        unityStarted = true;
-      });
+      // WebGL uyumluluk kontrolü
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        canvas.className = "unity-mobile";
+      } else {
+        canvas.style.width = "960px";
+        canvas.style.height = "600px";
+      }
       
-      // Unity'yi başlat
-      function startUnity() {
-        loadingBar.style.display = "block";
-        loadingText.innerHTML = "Uygulama başlatılıyor...";
-        
-        try {
-          // Unity yükleyicisini ekle
-          var script = document.createElement("script");
-          script.src = "Build/Project.loader.js";
-          
-          script.onload = function() {
-            // audioFix.js'deki fonksiyonları çağır
-            if (window.startAudioContext) {
-              window.startAudioContext();
-            }
-            
-            var config = {
-              dataUrl: "Build/Project.data",
-              frameworkUrl: "Build/Project.framework.js",
-              codeUrl: "Build/Project.wasm",
-              streamingAssetsUrl: "StreamingAssets",
-              companyName: "DefaultCompany",
-              productName: "Hirex3D",
-              productVersion: "1.0",
-              showBanner: function(msg, type) {
-                console.log("[Unity]", type, msg);
-                if (type === "error") {
-                  showError(msg);
-                }
-              },
-              // WebGL yapılandırma ayarları - optimizasyon
-              devicePixelRatio: 1,
-              powerPreference: "default",
-              matchWebGLToCanvasSize: true,
-              
-              // Bellek yönetimi
-              TOTAL_MEMORY: 256 * 1024 * 1024, // 256MB'a düşür - performans için
-              
-              // Telemetri/analitik devre dışı
-              disableStatistics: true,
-              enableTelemetry: false,
-              
-              // WebGL optimizasyonları
-              preserveDrawingBuffer: false,
-              failIfMajorPerformanceCaveat: false,
-              antialias: false,
-              alpha: false,
-              stencil: false,
-              premultipliedAlpha: false
-            };
-            
-            // Mobil cihaz kontrolü
-            if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-              var meta = document.createElement('meta');
-              meta.name = 'viewport';
-              meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-              document.getElementsByTagName('head')[0].appendChild(meta);
-              container.className = "unity-mobile";
-              canvas.className = "unity-mobile";
-              config.devicePixelRatio = 0.5; // Mobil cihazlarda düşük çözünürlük
-            } else {
-              canvas.style.width = "960px";
-              canvas.style.height = "600px";
-            }
-            
-            // Unity'yi başlat
-            console.log("Unity yükleniyor...");
-            createUnityInstance(canvas, config, function(progress) {
-              progressBarFull.style.width = (100 * progress) + "%";
-              loadingText.innerHTML = "Yükleniyor... %" + Math.round(progress * 100);
-            })
-            .then(function(instance) {
-              unityInstance = instance;
-              window.unityInstance = instance;
-              loadingBar.style.display = "none";
-              
-              // Tam ekran butonunu yapılandır
-              if (fullscreenButton) {
-                fullscreenButton.onclick = function() {
-                  instance.SetFullscreen(1);
-                };
-              }
-              
-              console.log("Unity başarıyla yüklendi");
-              
-              // Ses sistemlerini otomatik başlat
-              if (window.startAudioContext) {
-                window.startAudioContext();
-              }
-              
-              // WebSocket ve ses düzeltmeleri için
-              if (window.fixWebSocketHandler) {
-                window.fixWebSocketHandler();
-              }
-              
-              // Unity WebGL performans optimizasyonları
-              if (window.optimizeUnityPerformance) {
-                window.optimizeUnityPerformance();
-              }
-              
-              // WebGL hatası düzeltmeleri için
-              if (window.onUnityLoaded) {
-                window.onUnityLoaded();
-              }
-              
-              // FPS sınırla (performans için)
-              if (instance.SetMaximumFramerate) {
-                instance.SetMaximumFramerate(30);
-              }
-            })
-            .catch(function(message) {
-              showError("Unity yüklenirken hata: " + message);
-              console.error("Unity yükleme hatası:", message);
-            });
-          };
-          
-          script.onerror = function() {
-            showError("Unity yükleyicisi yüklenemedi. Lütfen sayfayı yenileyin.");
-          };
-          
-          document.body.appendChild(script);
-        } catch (error) {
-          showError("Unity başlatılırken hata: " + error);
-          console.error("Unity başlatma hatası:", error);
+      // Hata banner'ı
+      function showBanner(msg, type) {
+        warningBanner.innerHTML = "<img style='float:left; margin-right:10px;' src='TemplateData/warning-icon.png'> " + msg;
+        warningBanner.style.display = "block";
+        if (type == "error") {
+          warningBanner.style.backgroundColor = "#F44336";
+        } else if (type == "warning") {
+          warningBanner.style.backgroundColor = "#FF9800";
+        } else {
+          warningBanner.style.backgroundColor = "#4CAF50";
         }
       }
       
-      // Kullanıcı etkileşimleri
-      document.addEventListener('click', function() {
-        if (window.startAudioContext) window.startAudioContext();
-      });
+      // Canvası yapılandır
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      canvas.style.background = "black";
       
-      document.addEventListener('keydown', function() {
-        if (window.startAudioContext) window.startAudioContext();
-      });
+      // Loader yükleyici
+      var script = document.createElement("script");
+      script.src = "Build/Project.loader.js";
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+          statusText.innerHTML = "Yükleniyor: %" + Math.round(progress * 100);
+        }).then((unityInstance) => {
+          window.unityInstance = unityInstance;
+          loadingBar.style.display = "none";
+          startButton.style.display = "block";
+          statusText.innerHTML = "Unity başarıyla yüklendi";
+          
+          // Unity başlatıldığında düzeltmeleri çağır
+          if (window.onUnityLoaded) {
+            window.onUnityLoaded();
+          }
+          
+          // Kullanıcı etkileşimi ile ses sistemini başlat
+          initializeAudioContext();
+        }).catch((message) => {
+          showBanner(message, "error");
+        });
+      };
+      document.body.appendChild(script);
+      
+      /**
+       * Ses sistemini başlatmak için kullanıcı etkileşimi bekleyen fonksiyon
+       */
+      function initializeAudioContext() {
+        // Başlatma butonunu ayarla
+        startButton.addEventListener("click", function() {
+          startButton.style.display = "none";
+          if (window.startAudioContext) {
+            window.startAudioContext();
+          }
+        });
+        
+        // Canvasa tıklama olayı ekle
+        canvas.addEventListener("click", function() {
+          if (window.startAudioContext) {
+            window.startAudioContext();
+          }
+          overlay.style.display = "none";
+        });
+        
+        // 2 saniye sonra overlay'i göster
+        setTimeout(function() {
+          if (!window.audioStarted) {
+            overlay.style.display = "block";
+            
+            // 5 saniye sonra overlay'i otomatik gizle
+            setTimeout(function() {
+              overlay.style.display = "none";
+            }, 5000);
+          }
+        }, 2000);
+        
+        // Çeşitli kullanıcı etkileşimlerini dinle
+        document.addEventListener("click", function() {
+          if (window.startAudioContext) {
+            window.startAudioContext();
+          }
+        }, { once: true });
+        
+        document.addEventListener("keydown", function() {
+          if (window.startAudioContext) {
+            window.startAudioContext();
+          }
+        }, { once: true });
+      }
       
       // Unity telemetri isteklerini engelle
       var originalFetch = window.fetch;
