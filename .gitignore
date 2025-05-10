@@ -1,0 +1,108 @@
+# Unity .gitignore dosyası
+# https://github.com/github/gitignore/blob/main/Unity.gitignore
+
+# Unity tarafından oluşturulan klasörler
+/Unity/[Ll]ibrary/
+/Unity/[Tt]emp/
+/Unity/[Oo]bj/
+/Unity/[Bb]uild/
+/Unity/[Bb]uilds/
+/Unity/[Ll]ogs/
+/Unity/[Uu]ser[Ss]ettings/
+
+# Unity paketi oluşturma sırasında kullanılan klasörler
+.out/
+.utmp/
+.temp/
+
+# WebGL build
+Unity/WebGLBuild/
+
+# MemoryCaptures için
+/[Mm]emoryCaptures/
+
+# Asset meta data beklenebilir, ama bu klasörleri takip etmiyoruz
+/[Aa]ssets/**/*.meta
+
+# Asset Store pluginleri
+/[Aa]ssets/AssetStoreTools*
+/[Aa]ssets/Plugins*
+
+# Visual Studio / Rider / VS Code için dosyalar
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D tarafından oluşturulan dosyalar ve klasörler
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity3D crash raporları
+sysinfo.txt
+
+# Builds
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics
+crashlytics-build.properties
+
+# macOS dosyaları
+.DS_Store
+
+# Windows dosyaları
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.env
+
+# Diğer
+*.log
+
+# Büyük dosyaları özellikle yoksay
+Unity/Library/PackageCache/com.unity.burst@1.8.13/.Runtime/libburst-llvm-16.dylib
+Unity/Library/PackageCache/com.unity.burst@1.8.13/.Runtime/libburst-llvm-10.dylib
+Unity/Library/PackageCache/com.unity.burst@1.8.13/.Runtime/libburst-llvm-16.so
+Unity/Library/PackageCache/com.unity.burst@1.8.13/.Runtime/burst-llvm-16-arm64.dll
+Unity/Library/PackageCache/com.unity.burst@1.8.13/.Runtime/burst-llvm-16.dll
+Unity/Library/PackageCache/com.unity.burst@1.8.13/.Runtime/hostmac/dsymutil
+Unity/Library/Bee/artifacts/WebGL/GameAssembly/release_WebGL_wasm/GameAssembly.a
+Unity/Library/Artifacts/f7/f7984035bede72ba0e6d38de97adb761
+
+# Daha genel catch-all kurallar
+Unity/Library/PackageCache/**/*.dylib
+Unity/Library/PackageCache/**/*.so
+Unity/Library/PackageCache/**/*.dll
+Unity/Library/Bee/**/*.a
+Unity/Library/Artifacts/**/*
+Unity/Library/il2cpp_cache/
+Unity/Library/PlayerDataCache/ 
