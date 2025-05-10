@@ -42,28 +42,103 @@
         background-size: contain;
         margin: 0 auto;
       }
+      #unity-warning {
+        display: none;
+      }
     </style>
     <script>
-      // WebGL'de ses sorunlarını önleme
-      window.addEventListener('load', function() {
+      // WebGL'de ses sorunlarını düzeltme
+      window.addEventListener('DOMContentLoaded', function() {
         // Tarayıcının WebGL destekleyip desteklemediğini kontrol et
         var canvas = document.createElement('canvas');
         var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
         if (!gl) {
-          alert('WebGL desteği bulunamadı. Lütfen farklı bir tarayıcı deneyin.');
+          document.getElementById('unity-warning').style.display = 'block';
+          document.getElementById('unity-warning').innerHTML = '<div style="background: red; padding: 10px; color: white;">WebGL desteği bulunamadı. Lütfen farklı bir tarayıcı kullanın.</div>';
           return;
         }
+      });
 
-        // Audio Context için kullanıcı etkileşimi gerekiyor
-        document.addEventListener('click', function() {
-          if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
-            var audioContext = new (AudioContext || webkitAudioContext)();
-            if (audioContext.state === 'suspended') {
-              audioContext.resume();
+      // Unity'ye WebSocket simülasyonu için küresel fonksiyonlar tanımla
+      window.WebSocketWrapper = {
+        connect: function(url, sessionId) {
+          console.log("WebSocket bağlantısı kuruluyor (HTTP Poll): " + url + " / " + sessionId);
+          window.WebSocketActiveSessionId = sessionId;
+          window.LastWebSocketMessage = null;
+          return true;
+        },
+        disconnect: function() {
+          console.log("WebSocket bağlantısı kapatılıyor");
+          window.WebSocketActiveSessionId = null;
+          return true;
+        },
+        getLastMessage: function() {
+          var msg = window.LastWebSocketMessage;
+          window.LastWebSocketMessage = null;
+          return msg;
+        }
+      };
+
+      // Unity ile iletişim için küresel değişkenler
+      window.unityInstance = null;
+      window.WebSocketActiveSessionId = null;
+      window.LastWebSocketMessage = null;
+      
+      // Web API ile ses sentezleme ve Unity'ye gönderme
+      function playTextToSpeech(text) {
+        if (!text || text.trim() === '') return;
+        
+        try {
+          // Web Speech API kullan
+          if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            
+            // Türkçe ses bulmaya çalış
+            const voices = window.speechSynthesis.getVoices();
+            const turkishVoice = voices.find(voice => voice.lang.includes('tr') || voice.name.includes('Turkish'));
+            if (turkishVoice) {
+              utterance.voice = turkishVoice;
+            }
+            
+            window.speechSynthesis.speak(utterance);
+            
+            // Unity'ye feedback gönder
+            if (window.unityInstance) {
+              window.unityInstance.SendMessage("WebSocketManager", "OnAudioPlaybackStarted", text);
+            }
+          } else {
+            console.log("Web Speech API desteklenmiyor");
+          }
+        } catch (e) {
+          console.error("Ses oynatma hatası:", e);
+        }
+      }
+      
+      // API'den metin alıp seslendirme
+      async function pollAPIAndPlaySpeech() {
+        if (!window.WebSocketActiveSessionId) return;
+        
+        try {
+          // API'ye HTTP isteği
+          const response = await fetch(`https://yourapi.com/get-message?session_id=${window.WebSocketActiveSessionId}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.text) {
+              window.LastWebSocketMessage = JSON.stringify(data);
+              
+              // Ses sentezle ve oynat
+              if (data.text) {
+                playTextToSpeech(data.text);
+              }
             }
           }
-        }, { once: true });
-      });
+        } catch (e) {
+          console.error("API polling hatası:", e);
+        }
+      }
     </script>
   </head>
   <body>
@@ -75,7 +150,7 @@
           <div id="unity-progress-bar-full"></div>
         </div>
       </div>
-      <div id="unity-warning"> </div>
+      <div id="unity-warning"></div>
       <div id="unity-footer">
         <div id="unity-webgl-logo"></div>
         <div id="unity-fullscreen-button"></div>
@@ -91,7 +166,6 @@
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var warningBanner = document.querySelector("#unity-warning");
       var startButton = document.querySelector("#start-button");
-      var unityInstance = null;
 
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
@@ -133,6 +207,10 @@
       // WebGL performansını artırmak için çeşitli ayarlar
       config.devicePixelRatio = 1;
       config.matchWebGLToCanvasSize = true;
+      
+      // WebGL'deki bazı hata uyarılarını kapat
+      config.disableWebGLBaseExceptions = true;
+      config.ignoreWebGLErrors = true;
 
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         // Mobile device style: fill the whole browser client area with the game canvas:
@@ -164,12 +242,18 @@
       script.onload = function() {
         // Kullanıcı butona bastığında uygulama başlatılır
         startButton.addEventListener("click", function() {
-          // Ses bağlamını etkinleştir
+          // Ses sistemini aktifleştir
           try {
+            // WebAudio içeriklerini başlat
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             window.audioContext = new AudioContext();
+            
+            // SpeechSynthesis içeriğini başlat
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.getVoices();
+            }
           } catch (e) {
-            console.log("Web Audio API desteklenmiyor.");
+            console.warn("Web Audio API desteklenmiyor:", e);
           }
 
           // Kullanıcı etkileşimi gerçekleşti, buton kaldırılabilir
@@ -182,8 +266,11 @@
             progressBarFull.style.width = 100 * progress + "%";
           })
           .then((instance) => {
-            unityInstance = instance;
+            window.unityInstance = instance;
             loadingBar.style.display = "none";
+            
+            // API'den mesaj almak için polling başlat
+            setInterval(pollAPIAndPlaySpeech, 5000);
             
             // Fullscreen butonunu yapılandır
             fullscreenButton.onclick = () => {
@@ -191,7 +278,8 @@
             };
           })
           .catch((message) => {
-            alert("Unity WebGL yüklenirken hata oluştu: " + message);
+            warningBanner.style.display = 'block';
+            warningBanner.innerHTML = '<div style="background: red; padding: 10px; color: white;">Unity WebGL yüklenirken hata oluştu: ' + message + '</div>';
           });
         });
       };
