@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity WebGL Player | Hirex3D</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
+    <link rel="shortcut icon" href="WebGLBuild/TemplateData/favicon.ico">
+    <link rel="stylesheet" href="WebGLBuild/TemplateData/style.css">
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -56,13 +56,13 @@
         updateBannerVisibility();
       }
 
-      var buildUrl = "Build";
+      var buildUrl = "WebGLBuild/Build";
       var loaderUrl = buildUrl + "/Project.loader.js";
       var config = {
         dataUrl: buildUrl + "/Project.data.gz",
         frameworkUrl: buildUrl + "/Project.framework.js.gz",
         codeUrl: buildUrl + "/Project.wasm.gz",
-        streamingAssetsUrl: "StreamingAssets",
+        streamingAssetsUrl: "WebGLBuild/StreamingAssets",
         companyName: "DefaultCompany",
         productName: "Hirex3D",
         productVersion: "1.0",
