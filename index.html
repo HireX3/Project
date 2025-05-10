@@ -24,7 +24,47 @@
       #start-button:hover {
         background-color: #45a049;
       }
+      .unity-mobile #unity-canvas {
+        width: 100%;
+        height: 100%;
+      }
+      #unity-loading-bar {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        display: none;
+      }
+      #unity-logo {
+        width: 154px;
+        height: 130px;
+        background: url('./WebGLBuild/TemplateData/unity-logo-dark.png') no-repeat center;
+        background-size: contain;
+        margin: 0 auto;
+      }
     </style>
+    <script>
+      // WebGL'de ses sorunlarını önleme
+      window.addEventListener('load', function() {
+        // Tarayıcının WebGL destekleyip desteklemediğini kontrol et
+        var canvas = document.createElement('canvas');
+        var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        if (!gl) {
+          alert('WebGL desteği bulunamadı. Lütfen farklı bir tarayıcı deneyin.');
+          return;
+        }
+
+        // Audio Context için kullanıcı etkileşimi gerekiyor
+        document.addEventListener('click', function() {
+          if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+            var audioContext = new (AudioContext || webkitAudioContext)();
+            if (audioContext.state === 'suspended') {
+              audioContext.resume();
+            }
+          }
+        }, { once: true });
+      });
+    </script>
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -90,12 +130,9 @@
         showBanner: unityShowBanner,
       };
 
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
+      // WebGL performansını artırmak için çeşitli ayarlar
+      config.devicePixelRatio = 1;
+      config.matchWebGLToCanvasSize = true;
 
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
         // Mobile device style: fill the whole browser client area with the game canvas:
@@ -109,7 +146,7 @@
 
         // To lower canvas resolution on mobile devices to gain some
         // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
+        config.devicePixelRatio = 1;
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
 
@@ -117,42 +154,44 @@
         canvas.style.height = "600px";
       }
 
+      // Sayfa yüklendiğinde başlat düğmesini göster, canvas'ı gizle
+      canvas.style.display = "none";
       loadingBar.style.display = "block";
 
+      // WebGL modülünü yükle
       var script = document.createElement("script");
       script.src = loaderUrl;
-      script.onload = () => {
-        // Önce yükleme göstergesini gösteriyoruz
-        loadingBar.style.display = "block";
-        
-        // Unity Canvas'ı başlangıçta gizle, kullanıcı etkileşimi gerekiyor
-        canvas.style.display = "none";
-        
+      script.onload = function() {
         // Kullanıcı butona bastığında uygulama başlatılır
         startButton.addEventListener("click", function() {
+          // Ses bağlamını etkinleştir
+          try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            window.audioContext = new AudioContext();
+          } catch (e) {
+            console.log("Web Audio API desteklenmiyor.");
+          }
+
           // Kullanıcı etkileşimi gerçekleşti, buton kaldırılabilir
           startButton.style.display = "none";
           canvas.style.display = "block";
+          loadingBar.style.display = "block";
           
           // Unity uygulamasını başlat
           createUnityInstance(canvas, config, (progress) => {
             progressBarFull.style.width = 100 * progress + "%";
-          }).then((instance) => {
+          })
+          .then((instance) => {
             unityInstance = instance;
             loadingBar.style.display = "none";
+            
+            // Fullscreen butonunu yapılandır
             fullscreenButton.onclick = () => {
               unityInstance.SetFullscreen(1);
             };
-            
-            // AudioContext'i başlatmak için kullanıcı etkileşiminden sonra çağır
-            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
-              var audioContext = new (AudioContext || webkitAudioContext)();
-              if (audioContext.state === 'suspended') {
-                audioContext.resume();
-              }
-            }
-          }).catch((message) => {
-            alert(message);
+          })
+          .catch((message) => {
+            alert("Unity WebGL yüklenirken hata oluştu: " + message);
           });
         });
       };
