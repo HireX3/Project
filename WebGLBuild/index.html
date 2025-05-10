@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="tr">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Hirex3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HireX3D - Sanal Mülakat Simülasyonu</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <!-- Audio ve WebGL sorunlarını giderme scripti -->
@@ -194,23 +195,34 @@
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
-      <div id="unity-overlay" class="unity-overlay">
-        <div class="unity-overlay-message">
-          Ses sistemini etkinleştirmek için ekrana tıklayın.
+      <!-- Ses sistemi aktifleştirme overlay -->
+      <div id="audio-activation-overlay" style="position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 999; display: flex; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; transition: opacity 0.5s;">
+        <div style="background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; max-width: 80%;">
+          <h2>HireX3D Sanal Mülakat Simülasyonu</h2>
+          <p>Sanal mülakat deneyimini başlatmak için aşağıdaki butona tıklayın</p>
+          <button id="start-button" style="background: #4c9ed9; border: none; padding: 10px 20px; color: white; font-size: 16px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Başlat</button>
+          <p style="font-size: 12px; margin-top: 20px;">Not: Bu işlem ses sistemini başlatmak ve tarayıcı kısıtlamalarını aşmak için gereklidir</p>
         </div>
       </div>
-      <canvas id="unity-canvas" width=960 height=600></canvas>
+      
+      <canvas id="unity-canvas" style="width: 100%; height: 100%; background: #231F20"></canvas>
+      
       <div id="unity-loading-bar">
         <div id="unity-logo"></div>
         <div id="unity-progress-bar-empty">
           <div id="unity-progress-bar-full"></div>
         </div>
-        <div id="unity-status-text" style="text-align: center; color: white;">Yükleniyor...</div>
+        <div id="loading-text" style="color: white; text-align: center;">Yükleniyor... Bu işlem biraz zaman alabilir.</div>
       </div>
-      <button id="unity-start-button">Başlat</button>
-      <div id="unity-warning"></div>
+      
+      <div id="unity-mobile-warning">
+        <img src="TemplateData/warning-icon.png" style="float: left; margin-right: 10px;">
+        WebGL uygulaması mobil cihazlarda performans sorunu yaşayabilir.
+      </div>
+      
       <div id="unity-footer">
-        <div class="footer-text">HireX3D Mülakat Simülasyonu</div>
+        <div id="unity-fullscreen-button"></div>
+        <div id="unity-build-title">HireX3D Mülakat Simülasyonu</div>
       </div>
     </div>
     <script>
