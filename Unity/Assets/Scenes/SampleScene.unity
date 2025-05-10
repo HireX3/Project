@@ -157,10 +157,10 @@ RectTransform:
   - {fileID: 1985197671}
   m_Father: {fileID: 413314918}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 250, y: -160}
-  m_SizeDelta: {x: 100, y: 30}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 240, y: 40}
+  m_SizeDelta: {x: 70, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &66325233
 MonoBehaviour:
@@ -292,7 +292,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 800, y: 600}
@@ -312,7 +312,7 @@ Canvas:
   m_GameObject: {fileID: 413314914}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
@@ -529,8 +529,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -615,8 +615,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -330, y: -160}
-  m_SizeDelta: {x: 100, y: 30}
+  m_AnchoredPosition: {x: -160, y: 155}
+  m_SizeDelta: {x: 70, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &771391975
 MonoBehaviour:
@@ -1117,7 +1117,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -280, y: 170}
+  m_AnchoredPosition: {x: -10, y: 140}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1181872828
@@ -1167,8 +1167,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1253,8 +1253,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 250, y: -50}
-  m_SizeDelta: {x: 260, y: 150}
+  m_AnchoredPosition: {x: 240, y: -40}
+  m_SizeDelta: {x: 240, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1333334623
 MonoBehaviour:
@@ -1539,7 +1539,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 1, z: -0, w: 0}
   m_LocalPosition: {x: 0, y: 1.96, z: -1.4}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.15}
+  m_LocalScale: {x: 0.22, y: 0.22, z: 0.15}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -1891,8 +1891,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -1952,6 +1952,14 @@ PrefabInstance:
     - target: {fileID: 2255397488589104485, guid: 07f5bc98841c2594da2dbde07551c39f, type: 3}
       propertyPath: m_Name
       value: kadin_avatar
+      objectReference: {fileID: 0}
+    - target: {fileID: 2914781469195675755, guid: 07f5bc98841c2594da2dbde07551c39f, type: 3}
+      propertyPath: m_Avatar
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2914781469195675755, guid: 07f5bc98841c2594da2dbde07551c39f, type: 3}
+      propertyPath: m_Controller
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 3692521509739707429, guid: 07f5bc98841c2594da2dbde07551c39f, type: 3}
       propertyPath: m_LocalScale.x
@@ -2198,6 +2206,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   serverUrl: wss://127.0.0.1:8001/ws
+  audioSource: {fileID: 0}
 --- !u!114 &7489182909365068586
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2227,7 +2236,15 @@ MonoBehaviour:
   messageInput: {fileID: 1333334623}
   statusText: {fileID: 1181872828}
   apiBaseUrl: http://127.0.0.1:8001/
+  welcomeMessage: "Merhaba ve g\xF6r\xFC\u015Fmeye ho\u015F geldiniz! Ben bu m\xFClakatta
+    sizinle konu\u015Facak olan sanal m\xFClakat\xE7\u0131y\u0131m. Bug\xFCn yaz\u0131l\u0131m
+    geli\u015Ftirici pozisyonu i\xE7in birka\xE7 soru sormak istiyorum. Endi\u015Felenmeyin,
+    bu herhangi bir s\u0131nav de\u011Fil, sadece sizin deneyimlerinizi ve becerilerinizi
+    anlamak i\xE7in bir sohbet. Ba\u015Flamadan \xF6nce, kendinizi k\u0131saca tan\u0131tabilir
+    misiniz? E\u011Fitim ge\xE7mi\u015Finiz, profesyonel deneyimleriniz ve bu pozisyona
+    olan ilginiz hakk\u0131nda biraz bilgi payla\u015F\u0131rsan\u0131z sevinirim."
   audioHandler: {fileID: 7489182909365068585}
+  audioPlaybackSpeed: 1.03
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
