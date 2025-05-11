@@ -11,10 +11,15 @@ from enum import Enum
 from dotenv import load_dotenv
 import uuid
 import base64
-from gtts import gTTS
-import io
 
-# .env dosyasını yükle
+
+
+from dotenv import load_dotenv
+from elevenlabs.client import ElevenLabs
+from elevenlabs import play
+
+
+
 load_dotenv()
 
 # Gemini API anahtarını al
@@ -43,24 +48,39 @@ interview_sessions = {}
 active_connections: Dict[str, WebSocket] = {}
 
 def text_to_speech(text: str) -> bytes:
-    """Metni sese dönüştürür"""
+    """Metni sese dönüştürür (ElevenLabs kullanarak)"""
     try:
         print(f"Seslendirilecek metin: {text}")
+        ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
         
-        # Google'ın TTS hizmeti, Türkçe dili için TLD com.tr kullanımı
-        tts = gTTS(text=text, lang='tr', tld='com.tr', slow=False)
+        # ElevenLabs API anahtarını kontrol et
+        if not ELEVENLABS_API_KEY:
+            raise ValueError("ELEVENLABS_API_KEY bulunamadı")
+            
+        client = ElevenLabs()
+
+        # Metni sese dönüştür
+        audio_generator = client.text_to_speech.convert(
+            text=text,
+            voice_id="JBFqnCBsd6RMkjVDRZzb",  # Bella sesi
+            model_id="eleven_multilingual_v2",
+            output_format="mp3_44100_128"
+        )
         
-        # Ses verisini bir bellek tamponuna kaydet
-        mp3_fp = io.BytesIO()
-        tts.write_to_fp(mp3_fp)
-        mp3_fp.seek(0)
+        # Generator'ı bytes'a dönüştür
+        audio_bytes = b''.join(chunk for chunk in audio_generator)
         
-        # Google TTS hizmetinden dönen ses verisini oku
-        audio_data = mp3_fp.read()
-        print(f"Ses verisi oluşturuldu, boyut: {len(audio_data)} bytes")
-        return audio_data
+        if not audio_bytes:
+            raise ValueError("Ses verisi oluşturulamadı")
+            
+        print(f"Ses verisi oluşturuldu, boyut: {len(audio_bytes)} bytes")
+        return audio_bytes
+        
     except Exception as e:
-        print(f"Ses dönüştürme hatası: {str(e)}")
+        print(f"TTS hatası: {str(e)}")
+        # Hata detaylarını logla
+        import traceback
+        print(f"Hata detayı: {traceback.format_exc()}")
         return None
 
 async def send_audio_to_unity(websocket: WebSocket, text: str):
@@ -761,8 +781,10 @@ async def generate_speech(request: TextToSpeechRequest):
             "audio": base64.b64encode(audio_data).decode('utf-8')
         }
     except Exception as e:
-        print(f"TTS hatası: {str(e)}")
+        print(f"hata: {str(e)}")
         raise HTTPException(status_code=500, detail=f"TTS hatası: {str(e)}")
+
+
 
 @app.get("/get-message")
 async def get_message(session_id: str):
@@ -776,4 +798,6 @@ async def get_message(session_id: str):
     return None
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001) 
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True) 
+    
+    
