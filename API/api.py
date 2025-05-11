@@ -146,7 +146,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 # Mesajı işle ve yanıt oluştur
                 response = await process_interview_message(data.get('data'))
                 print(f"Oluşturulan yanıt: {response}")
-                
+                ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
                 # Ses dönüşümü
                 try:
                     client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
