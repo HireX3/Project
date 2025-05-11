@@ -71,3 +71,14 @@ Desktop.ini.meta
 # macOS
 .DS_Store
 .DS_Store.meta 
+
+venv/
+venv
+
+# Environment files
+.env
+.env.*
+*.env
+/.env   
+/.env.*
+/*.env

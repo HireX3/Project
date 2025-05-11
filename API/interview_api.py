@@ -13,6 +13,7 @@ import uuid
 import base64
 from gtts import gTTS
 import io
+from fastapi.responses import StreamingResponse
 
 # .env dosyasını yükle
 load_dotenv()
@@ -210,6 +211,9 @@ class InterviewResponse(BaseModel):
     current_stage: InterviewStage
     is_completed: bool
     overall_feedback: Optional[str] = None
+
+class TextToSpeechRequest(BaseModel):
+    text: str
 
 # Varsayılan mülakat aşamaları
 DEFAULT_INTERVIEW_STAGES = [
@@ -746,14 +750,10 @@ async def status():
     return {"status": "online"}
 
 @app.post("/text-to-speech")
-async def generate_speech(request: dict):
+async def generate_speech(request: TextToSpeechRequest):
     """Metni sese dönüştürür ve base64 formatında döndürür"""
     try:
-        text = request.get("text")
-        if not text:
-            raise HTTPException(status_code=400, detail="Metin parametre gerekli")
-        
-        audio_data = text_to_speech(text)
+        audio_data = text_to_speech(request.text)
         if not audio_data:
             raise HTTPException(status_code=500, detail="Ses oluşturulamadı")
         
@@ -764,6 +764,25 @@ async def generate_speech(request: dict):
     except Exception as e:
         print(f"TTS hatası: {str(e)}")
         raise HTTPException(status_code=500, detail=f"TTS hatası: {str(e)}")
+
+@app.post("/text-to-speech-mp3")
+async def generate_speech_mp3(request: TextToSpeechRequest):
+    """Metni sese dönüştürür ve mp3 dosyası olarak döndürür"""
+    try:
+        audio_data = text_to_speech(request.text)
+        if not audio_data:
+            raise HTTPException(status_code=500, detail="Ses oluşturulamadı")
+        # MP3 verisini bir BytesIO nesnesine sar
+        audio_stream = io.BytesIO(audio_data)
+        audio_stream.seek(0)
+        return StreamingResponse(
+            audio_stream,
+            media_type="audio/mpeg",
+            headers={"Content-Disposition": "attachment; filename=tts.mp3"}
+        )
+    except Exception as e:
+        print(f"TTS mp3 hatası: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"TTS mp3 hatası: {str(e)}")
 
 @app.get("/get-message")
 async def get_message(session_id: str):
