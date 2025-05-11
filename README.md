@@ -40,9 +40,9 @@ WebGL demo, aşağıdaki bileşenleri kullanmaktadır:
 API klasörü, FastAPI ile geliştirilmiş backend servisini içermektedir. Tam bir deneyim için API sunucusunu aşağıdaki komutla başlatabilirsiniz:
 
 ```bash
-cd API
 pip install -r requirements.txt
-uvicorn interview_api:app --reload
+cd API
+uvicorn api:app --reload
 ```
 
 ---
