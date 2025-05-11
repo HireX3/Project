@@ -8,7 +8,6 @@ import requests
 import json
 from typing import List, Dict, Optional, Any
 from enum import Enum
-from dotenv import load_dotenv
 import uuid
 import base64
 
@@ -57,10 +56,11 @@ def text_to_speech(text: str) -> bytes:
         if not ELEVENLABS_API_KEY:
             raise ValueError("ELEVENLABS_API_KEY bulunamadı")
             
-        client = ElevenLabs()
-
-        # Metni sese dönüştür
-        audio_generator = client.text_to_speech.convert(
+        # ElevenLabs client'ı oluştur
+        client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+        
+        # Ses dönüşümü
+        audio = client.text_to_speech.convert(
             text=text,
             voice_id="JBFqnCBsd6RMkjVDRZzb",  # Bella sesi
             model_id="eleven_multilingual_v2",
@@ -68,7 +68,7 @@ def text_to_speech(text: str) -> bytes:
         )
         
         # Generator'ı bytes'a dönüştür
-        audio_bytes = b''.join(chunk for chunk in audio_generator)
+        audio_bytes = b''.join(chunk for chunk in audio)
         
         if not audio_bytes:
             raise ValueError("Ses verisi oluşturulamadı")
@@ -147,21 +147,35 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 response = await process_interview_message(data.get('data'))
                 print(f"Oluşturulan yanıt: {response}")
                 
-                # Yanıtı seslendir ve gönder
-                audio_data = text_to_speech(response)
-                if audio_data:
-                    print(f"Ses verisi oluşturuldu, boyut: {len(audio_data)} bytes")
+                # Ses dönüşümü
+                try:
+                    client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+                    audio = client.text_to_speech.convert(
+                        text=response,
+                        voice_id="JBFqnCBsd6RMkjVDRZzb",
+                        model_id="eleven_multilingual_v2",
+                        output_format="mp3_44100_128"
+                    )
+                    
+                    # Ses verisini parça parça gönder
+                    for chunk in audio:
+                        if chunk:
+                            await websocket.send_bytes(chunk)
+                            
+                    # İşlem bittiğinde bildirim gönder
                     await websocket.send_json({
-                        'type': 'audio',
-                        'data': base64.b64encode(audio_data).decode('utf-8')
+                        'type': 'stream_complete',
+                        'data': {'text': response}
                     })
-                    print("Ses verisi gönderildi")
-                else:
-                    print("Ses verisi oluşturulamadı, metin gönderiliyor")
+                    
+                except Exception as e:
+                    print(f"Ses dönüşüm hatası: {str(e)}")
+                    # Hata durumunda sadece metni gönder
                     await websocket.send_json({
                         'type': 'message',
-                        'data': response
+                        'data': {'text': response}
                     })
+                    
     except WebSocketDisconnect:
         print(f"Bağlantı koptu: {client_id}")
         del active_connections[client_id]
@@ -577,74 +591,42 @@ async def root():
 
 @app.post("/start-interview", response_model=InterviewResponse)
 async def start_interview(request: InterviewRequest):
-    """Yeni bir mülakat başlatır"""
-    
-    session_id = str(uuid.uuid4())
-    
-    # Aşamaları oluştur
-    stages = []
-    stage_data = request.custom_stages if request.custom_stages else DEFAULT_INTERVIEW_STAGES
-    
-    for stage_info in stage_data:
-        stage = InterviewStage(
-            id=stage_info["id"],
-            name=stage_info["name"],
-            description=stage_info["description"]
+    try:
+        # Yeni bir oturum ID'si oluştur
+        session_id = str(uuid.uuid4())
+        
+        # Varsayılan aşamaları oluştur
+        stages = []
+        for i, stage_info in enumerate(DEFAULT_INTERVIEW_STAGES):
+            stage = InterviewStage(
+                id=str(uuid.uuid4()),  # Her aşama için benzersiz ID
+                name=stage_info["name"],
+                description=stage_info["description"],
+                status=StageStatus.NOT_STARTED,
+                questions=[]
+            )
+            stages.append(stage)
+        
+        # Yeni oturum oluştur
+        session = InterviewSession(
+            id=session_id,
+            position=request.position,
+            candidate_name=request.candidate_name,
+            stages=stages
         )
-        stages.append(stage)
-    
-    # Mülakat oturumu oluştur
-    session = InterviewSession(
-        id=session_id,
-        position=request.position,
-        candidate_name=request.candidate_name,
-        stages=stages
-    )
-    
-    # İlk aşamayı başlat
-    current_stage = session.stages[0]
-    current_stage.status = StageStatus.IN_PROGRESS
-    
-    # İlk aşama için soruları oluştur
-    current_stage.questions = generate_stage_questions(
-        session.position, 
-        current_stage,
-        session.candidate_name
-    )
-    
-    # Mülakat oturumunu kaydet
-    interview_sessions[session_id] = session
-    
-    # İlk aşamanın ilk sorusunu oluştur
-    first_question = format_bot_response(session, current_stage, True)
-    
-    # İlk soruyu sohbet geçmişine ekle
-    session.chat_history.append({
-        "content": first_question,
-        "is_user": False,
-        "timestamp": "now"
-    })
-    
-    # WebSocket üzerinden ilk mesajı seslendir
-    if session_id in active_connections:
-        websocket = active_connections[session_id]
-        try:
-            audio_data = text_to_speech(first_question)
-            if audio_data:
-                await websocket.send_json({
-                    'type': 'audio',
-                    'data': base64.b64encode(audio_data).decode('utf-8')
-                })
-                print(f"İlk soru WebSocket üzerinden seslendirildi: {first_question[:50]}...")
-        except Exception as e:
-            print(f"İlk soru seslendirme hatası: {str(e)}")
-    
-    return InterviewResponse(
-        session_id=session_id,
-        message=first_question,
-        current_stage=current_stage,
-        is_completed=False
-    )
+        
+        # Oturumu sakla
+        interview_sessions[session_id] = session
+        
+        return InterviewResponse(
+            session_id=session_id,
+            message="Mülakat başlatıldı",
+            current_stage=session.stages[0],
+            is_completed=False
+        )
+    except Exception as e:
+        print(f"start_interview hatası: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/send-message", response_model=InterviewResponse)
 async def send_message(request: MessageRequest):
